@@ -48,13 +48,22 @@ mainSteps:
       Value: '{{ DescribeInstanceAttribute.InstanceType }}'
   - name: Branch
     action: aws:branch
-    isEnd: true
     inputs:
       Choices:
         - NextStep: stopInstance
           Not:
             Variable: '{{ variable:CurrentInstanceType }}'
             StringEquals: '{{InstanceType}}'
+      Default: InvokeWebhook
+  - name: InvokeWebhook
+    action: aws:invokeWebhook
+    isEnd: true
+    inputs:
+      IntegrationName: slack-webhook
+      Body: |-
+        {
+          "Text": "The automation {{automation:EXECUTION_ID}} cannot resize the instance to mitigate issue as instance {{InstanceId}} is already of type {{InstanceType}}"
+        }
   - name: stopInstance
     action: aws:changeInstanceState
     nextStep: resizeInstance
@@ -90,8 +99,7 @@ mainSteps:
             Duration: '{{SleepWait}}'
   - name: startInstance
     action: aws:changeInstanceState
-    nextStep: InvokeWebhook
-    isEnd: false
+    isEnd: true
     inputs:
       InstanceIds:
         - '{{InstanceId}}'
