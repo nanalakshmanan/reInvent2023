@@ -29,6 +29,7 @@ $Runbooks = @($SimpleRunbook, $BranchingRunbook, $AdvancedRunbook)
 
 $Runbooks | %{
 	Remove-SSMDocument -Name $_ -Force
+}
 
 <#$CommandDocs = @($RestartWindowsUpdateDoc, $RestartServiceCommandDoc, $CopyS3FolderDoc, $GetCredentialDoc, $ApplyDscMof, $DisableTabletInput)
 
