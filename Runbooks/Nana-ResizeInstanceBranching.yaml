@@ -1,0 +1,64 @@
+description: Resize an EC2 instance
+schemaVersion: '0.3'
+assumeRole: '{{ AutomationAssumeRole }}'
+parameters:
+  InstanceId:
+    type: String
+    description: (Required) The Id of the instance
+  InstanceType:
+    type: String
+    description: (Required) The desired instance type
+  SleepWait:
+    type: String
+    default: PT5S
+    description: (Optional) The desired wait time before starting instance
+    allowedPattern: ^PT([0-9]{1,6}S|[0-9]{1,5}M|[0-9]{1,3}H)$|^PD[0-7]$
+  AutomationAssumeRole:
+    type: String
+    description: (Optional) The ARN of the role that allows Automation to perform the actions on your behalf.
+    default: ''
+mainSteps:
+  - name: assertInstanceType
+    action: aws:assertAwsResourceProperty
+    isCritical: false
+    isEnd: true
+    onFailure: step:stopInstance
+    inputs:
+      Service: ec2
+      Api: DescribeInstances
+      InstanceIds:
+        - '{{InstanceId}}'
+      PropertySelector: $.Reservations[0].Instances[0].InstanceType
+      DesiredValues:
+        - '{{InstanceType}}'
+  - name: stopInstance
+    action: aws:changeInstanceState
+    nextStep: resizeInstance
+    isEnd: false
+    inputs:
+      InstanceIds:
+        - '{{InstanceId}}'
+      DesiredState: stopped
+  - name: resizeInstance
+    action: aws:executeAwsApi
+    nextStep: wait
+    isEnd: false
+    inputs:
+      Service: ec2
+      Api: ModifyInstanceAttribute
+      InstanceId: '{{InstanceId}}'
+      InstanceType:
+        Value: '{{InstanceType}}'
+  - name: wait
+    action: aws:sleep
+    nextStep: startInstance
+    isEnd: false
+    inputs:
+      Duration: '{{SleepWait}}'
+  - name: startInstance
+    action: aws:changeInstanceState
+    isEnd: true
+    inputs:
+      InstanceIds:
+        - '{{InstanceId}}'
+      DesiredState: running

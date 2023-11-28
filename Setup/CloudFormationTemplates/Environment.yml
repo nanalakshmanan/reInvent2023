@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Deploys 2 Windows instances with the same configuration, from the specified AMI as managed instances 
+Parameters:
+  InstanceProfileName:
+    Description: Name of the instance profile to attach
+    Type: String
+  KeyPairName:
+    Description: Keypair for the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription : Must be the name of an existing EC2 Keypair
+  InstanceType:
+    Description: Amazon EC2 Instance Type
+    Type: String
+    Default: t2.medium
+    AllowedValues: [
+      t2.micro,
+      t2.medium, 
+      t2.large
+    ]
+  AmiId:
+    Description: Ami Id for Windows
+    Type: String
+  VpcId:
+    Description: VPC id for the security group
+    Type: String
+  RoleName:
+    Description: Name of the role to create
+    Type: String
+  FunctionName:
+    Description: Name of the lambda function to create
+    Type: String
+  SNSTopicName:
+    Description: Name of SNS topic to send CW alarm notificastions to
+    Type: String
+  AlarmName:
+    Description: Name of CloudWatch Alarm
+    Type: String
+  EventBridgeRuleName:
+    Description: Name of EventBridge Rule to create
+    Type: String
+Resources:
+  RDPAccessGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: Enable RDP access via port 3389
+      GroupName: RDPAccess
+      SecurityGroupIngress:
+        CidrIp: 0.0.0.0/0
+        FromPort: 3389
+        IpProtocol: tcp
+        ToPort: 3389
+  Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AmiId
+      KeyName: !Ref KeyPairName
+      IamInstanceProfile: !Ref InstanceProfileName
+      SecurityGroupIds: [!GetAtt RDPAccessGroup.GroupId]
+      Tags:
+      - Key: Type
+        Value: Webserver
+      - Key: Environment
+        Value: Production
+    DependsOn: RDPAccessGroup
+  Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AmiId
+      KeyName: !Ref KeyPairName
+      IamInstanceProfile: !Ref InstanceProfileName
+      SecurityGroupIds: [!GetAtt RDPAccessGroup.GroupId]
+      Tags:
+      - Key: Type
+        Value: Webserver
+      - Key: Environment
+        Value: Production
+    DependsOn: RDPAccessGroup
+  CPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: CPU alarm for my instance
+      AlarmName: !Ref AlarmName
+      AlarmActions:
+      - !Ref SNSTopicName
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '60'
+      EvaluationPeriods: '3'
+      Threshold: '10'
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance1
+  EventRule0:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail:
+          alarmName:
+            - !Ref AlarmName
+          state:
+            value:
+              - ALARM
+        detail-type:
+          - CloudWatch Alarm State Change
+        resources:
+          - !Ref CPUAlarm 
+      Name: !Ref EventBridgeRuleName
+      State: ENABLED
+      Targets:
+        - Id: !Ref Instance1
+          Arn: >-
+            arn:aws:ssm:us-east-1::automation-definition/AWS-ResizeInstance:$DEFAULT
+          RoleArn: arn:aws:iam::675675802741:role/NanaTestRole
+          InputTransformer:
+            InputPathsMap:
+              instance: >-
+                $.detail.configuration.metrics[0].metricState.metric.dimensions.InstanceId
+            InputTemplate: |-
+              {
+                "InstanceId":"<instance>",
+                "InstanceType":"t2.medium",
+                "SleepWait":"PT5S",
+                "AutomationAssumeRole":""
+              }

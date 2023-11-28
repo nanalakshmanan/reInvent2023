@@ -1,0 +1,98 @@
+description: Resize an EC2 instance
+schemaVersion: '0.3'
+assumeRole: '{{ AutomationAssumeRole }}'
+parameters:
+  InstanceId:
+    type: String
+    description: (Required) The Id of the instance
+  InstanceType:
+    type: String
+    description: (Required) The desired instance type
+  SleepWait:
+    type: String
+    default: PT5S
+    description: (Optional) The desired wait time before starting instance
+    allowedPattern: ^PT([0-9]{1,6}S|[0-9]{1,5}M|[0-9]{1,3}H)$|^PD[0-7]$
+  AutomationAssumeRole:
+    type: String
+    description: (Optional) The ARN of the role that allows Automation to perform the actions on your behalf.
+    default: ''
+variables:
+  CurrentInstanceType:
+    type: String
+    description: The current instance type associated with the instance
+  LoopVariable:
+    type: Integer
+    description: Variable to demo loops
+    default: 1
+mainSteps:
+  - name: DescribeInstanceAttribute
+    action: aws:executeAwsApi
+    nextStep: UpdateVariable
+    isEnd: false
+    inputs:
+      Service: ec2
+      Api: DescribeInstanceAttribute
+      Attribute: instanceType
+      InstanceId: '{{ InstanceId }}'
+    outputs:
+      - Type: String
+        Name: InstanceType
+        Selector: $.InstanceType.Value
+  - name: UpdateVariable
+    action: aws:updateVariable
+    nextStep: Branch
+    isEnd: false
+    inputs:
+      Name: variable:CurrentInstanceType
+      Value: '{{ DescribeInstanceAttribute.InstanceType }}'
+  - name: Branch
+    action: aws:branch
+    isEnd: true
+    inputs:
+      Choices:
+        - NextStep: stopInstance
+          Not:
+            Variable: '{{ variable:CurrentInstanceType }}'
+            StringEquals: '{{InstanceType}}'
+  - name: stopInstance
+    action: aws:changeInstanceState
+    nextStep: resizeInstance
+    isEnd: false
+    inputs:
+      InstanceIds:
+        - '{{InstanceId}}'
+      DesiredState: stopped
+  - name: resizeInstance
+    action: aws:executeAwsApi
+    nextStep: Loop
+    isEnd: false
+    inputs:
+      Service: ec2
+      Api: ModifyInstanceAttribute
+      InstanceId: '{{InstanceId}}'
+      InstanceType:
+        Value: '{{InstanceType}}'
+  - name: Loop
+    action: aws:loop
+    nextStep: startInstance
+    isEnd: false
+    inputs:
+      MaxIterations: 1
+      LoopCondition:
+        Variable: '{{ variable:LoopVariable }}'
+        NumericEquals: 1
+      Steps:
+        - name: wait
+          action: aws:sleep
+          isEnd: true
+          inputs:
+            Duration: '{{SleepWait}}'
+  - name: startInstance
+    action: aws:changeInstanceState
+    nextStep: InvokeWebhook
+    isEnd: false
+    inputs:
+      InstanceIds:
+        - '{{InstanceId}}'
+      DesiredState: running
