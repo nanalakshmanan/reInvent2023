@@ -12,7 +12,7 @@ $SNSTopicName = 'arn:aws:sns:us-east-1:675675802741:Automation-NanaTestApproval'
 $EnvironmentStack = 'DemoEnvironmentReInvent2023'
 $AlarmName = 'NanaDemoAlarm'
 $RuleName = 'NanaTestRule'
-
+$EventRoleArn = 'arn:aws:iam::675675802741:role/NanaTestRole'
 $SimpleRunbook = 'Nana-ResizeInstanceSimple'
 $BranchingRunbook = 'Nana-ResizeInstanceBranching'
 $AdvancedRunbook = 'Nana-ResizeInstanceAdvanced'

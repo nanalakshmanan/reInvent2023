@@ -12,7 +12,7 @@ Parameters:
   InstanceType:
     Description: Amazon EC2 Instance Type
     Type: String
-    Default: t2.medium
+    Default: t2.micro
     AllowedValues: [
       t2.micro,
       t2.medium, 
@@ -39,6 +39,9 @@ Parameters:
   EventBridgeRuleName:
     Description: Name of EventBridge Rule to create
     Type: String
+  EventRoleArn:
+    Description: Arn of role to execute from Event Bridge Rule
+    Type: String
 Resources:
   RDPAccessGroup:
     Type: AWS::EC2::SecurityGroup
@@ -64,6 +67,8 @@ Resources:
         Value: Webserver
       - Key: Environment
         Value: Production
+      - Key: Name
+        Value: HRAppServer
     DependsOn: RDPAccessGroup
   Instance2:
     Type: AWS::EC2::Instance
@@ -78,6 +83,8 @@ Resources:
         Value: Webserver
       - Key: Environment
         Value: Production
+      - Key: Name
+        Value: FinanceAppServer
     DependsOn: RDPAccessGroup
   CPUAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -96,7 +103,7 @@ Resources:
       Dimensions:
       - Name: InstanceId
         Value: !Ref Instance1
-  EventRule0:
+  AlarmRule:
     Type: AWS::Events::Rule
     Properties:
       EventBusName: default
@@ -112,14 +119,14 @@ Resources:
         detail-type:
           - CloudWatch Alarm State Change
         resources:
-          - !Ref CPUAlarm 
+          - !GetAtt CPUAlarm.Arn
       Name: !Ref EventBridgeRuleName
       State: ENABLED
       Targets:
-        - Id: !Ref Instance1
+        - Id: Id43c39020-7758-449a-9588-eaf74d7f86c5
           Arn: >-
             arn:aws:ssm:us-east-1::automation-definition/AWS-ResizeInstance:$DEFAULT
-          RoleArn: arn:aws:iam::675675802741:role/NanaTestRole
+          RoleArn: !Ref EventRoleArn
           InputTransformer:
             InputPathsMap:
               instance: >-
@@ -128,6 +135,5 @@ Resources:
               {
                 "InstanceId":"<instance>",
                 "InstanceType":"t2.medium",
-                "SleepWait":"PT5S",
-                "AutomationAssumeRole":""
+                "SleepWait":"PT5S"
               }

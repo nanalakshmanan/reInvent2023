@@ -49,8 +49,9 @@ $Vpc = Get-Parameter 'VpcId' $VpcId
 $SNSTopic = Get-Parameter 'SNSTopicName' $SNSTopicName
 $CloudWatchAlarm = Get-Parameter 'AlarmName' $AlarmName
 $EventBridgeRule = Get-Parameter 'EventBridgeRuleName' $RuleName
+$EventRole = Get-Parameter 'EventRoleArn' $EventRoleArn
 
-New-CFNStack -StackName $EnvironmentStack -TemplateBody $contents -Parameter @($InstanceProfile, $KeyPair, $AmiId, $Vpc, $Role, $LambdaFunction, $SNSTopic, $CloudWatchAlarm, $EventBridgeRule) -Capability CAPABILITY_NAMED_IAM
+New-CFNStack -StackName $EnvironmentStack -TemplateBody $contents -Parameter @($InstanceProfile, $KeyPair, $AmiId, $Vpc, $Role, $LambdaFunction, $SNSTopic, $CloudWatchAlarm, $EventBridgeRule, $EventRole) -Capability CAPABILITY_NAMED_IAM
 
 # wait for the stack creation to complete
 $AllStacks | %{

@@ -18,12 +18,10 @@ function Wait-Stack
 $AllStacks | % {
 	if (Test-CFNStack -StackName $_){
 		Remove-CFNStack -StackName $_ -Force
+		Wait-CFNStack -StackName $_ -Status DELETE_COMPLETE
 	}
 }
 
-$AllStacks | % {
-	Wait-Stack -StackName $_
-}
 
 $Runbooks = @($SimpleRunbook, $BranchingRunbook, $AdvancedRunbook, $ScriptRunbook)
 
