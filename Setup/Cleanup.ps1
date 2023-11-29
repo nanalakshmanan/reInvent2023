@@ -25,7 +25,7 @@ $AllStacks | % {
 	Wait-Stack -StackName $_
 }
 
-$Runbooks = @($SimpleRunbook, $BranchingRunbook, $AdvancedRunbook)
+$Runbooks = @($SimpleRunbook, $BranchingRunbook, $AdvancedRunbook, $ScriptRunbook)
 
 $Runbooks | %{
 	Remove-SSMDocument -Name $_ -Force

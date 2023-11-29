@@ -16,6 +16,8 @@ $RuleName = 'NanaTestRule'
 $SimpleRunbook = 'Nana-ResizeInstanceSimple'
 $BranchingRunbook = 'Nana-ResizeInstanceBranching'
 $AdvancedRunbook = 'Nana-ResizeInstanceAdvanced'
+$ScriptRunbook = 'Nana-ResizeInstanceScript'
+
 <#$GetCredentialDoc = 'Nana-GetCredentialFromStore'
 $RestartServiceCommandDoc = 'Nana-RestartServiceCommand'
 $RestartWindowsUpdateDoc = 'Nana-RestartWindowsUpdate'
