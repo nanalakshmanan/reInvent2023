@@ -59,8 +59,8 @@ $AllStacks | %{
 
 $Runbooks = @($SimpleRunbook, $BranchingRunbook, $AdvancedRunbook)
 
-$Runbooks | %{
-	$contents = Get-Content "../Runbooks/$($_).yml" -Raw
+$Runbooks | % {
+	$contents = Get-Content "../Runbooks/$($_).yaml" -Raw
 	New-SSMDocument -Content $contents -DocumentFormat YAML -DocumentType Automation -Name $_
 }
 

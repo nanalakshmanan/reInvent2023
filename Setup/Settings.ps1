@@ -14,7 +14,7 @@ $AlarmName = 'NanaDemoAlarm'
 $RuleName = 'NanaTestRule'
 
 $SimpleRunbook = 'Nana-ResizeInstanceSimple'
-$BrancingRunbook = 'Nana-ResizeInstanceBranching'
+$BranchingRunbook = 'Nana-ResizeInstanceBranching'
 $AdvancedRunbook = 'Nana-ResizeInstanceAdvanced'
 <#$GetCredentialDoc = 'Nana-GetCredentialFromStore'
 $RestartServiceCommandDoc = 'Nana-RestartServiceCommand'
